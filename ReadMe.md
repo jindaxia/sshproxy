@@ -19,7 +19,7 @@ A TCP proxy for yum，pip or wget on ssh tunnel portfowarding
 1. Edit the server login and bastion login（if needed）
 
     ```python
-        server = ['172.20.243.22', 22]  # server ip/port
+        server = ['192.168.1.22', 22]  # server ip/port
         login = ['root', 'Passw0rd'] # login user/password
         bastion = ['1.1.1.1', 22, 'root', '1'] # bastion login
     ```
