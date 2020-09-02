@@ -6,18 +6,17 @@ from rforward import reverse_forward_tunnel
 from proxy import HTTP, logger
 
 
-def set_connection():
-    port = 10888
-    server = ['1.1.1.1', 22]  # server ip and port
-    login = ['root', '111111'] # login user and password
-    bastion = ['1.1.1.1', 22, 'root', '1'] # bastion login
+def set_connection(http_proxy_port):
+    server = ['172.20.243.133', 22]  # server ip and port
+    login = ['root', 'linux123!@#'] # login user and password
+    bastion = ['172.20.243.132', 22, 'root', 'linux123!@#'] # bastion login
 
     bastion_channel = build_jump(bastion, server[0], server[1])
 
     client = paramiko.SSHClient()
     client.load_system_host_keys()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
+    proxy_port = 10888
     try:
         print("Connecting to ssh host %s:%d ..." % (server[0], server[1]))
         client.connect(
@@ -31,17 +30,17 @@ def set_connection():
         print("*** Failed to connect to %s:%d: %r" % (server[0], server[1], e))
         sys.exit(1)
 
-    setup_yum_proxy(client, port)
-    setup_wget_proxy(client, port)
+    setup_yum_proxy(client, proxy_port)
+    setup_wget_proxy(client, proxy_port)
 
     try:
-        remote = ['127.0.0.1', 8080]
+        remote = ['127.0.0.1', http_proxy_port]
         print(
             "Now forwarding remote port %d to %s:%d ..." % (
-                port, remote[0], remote[1])
+                proxy_port, remote[0], remote[1])
         )
         reverse_forward_tunnel(
-            port, remote[0], remote[1], client.get_transport()
+            proxy_port, remote[0], remote[1], client.get_transport()
         )
     except KeyboardInterrupt:
         print("C-c: Port forwarding stopped.")
@@ -54,7 +53,7 @@ def build_jump(bastion, des_server, des_port):
     bastion_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         print("*** connecting to bastion %s:%d: %r" %
-              (bastion[0], bastion[1], e))
+              (bastion[0], bastion[1], 1))
         bastion_client.connect(
             bastion[0],
             bastion[1],
@@ -97,13 +96,13 @@ def setup_wget_proxy(client, port):
         "sed -i 's/^#\?https_proxy = .*$/https_proxy = http:\/\/localhost:10888\//g' /etc/wgetrc")
 
 
-def setup_proxy():
+def setup_proxy(http_proxy_port):
     try:
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'),
 
         proxy = HTTP(hostname='127.0.0.1',
-                     port=int(8080),
+                     port=int(http_proxy_port),
                      backlog=int(100),
                      auth_code=None,
                      server_recvbuf_size=int(8192),
@@ -115,9 +114,10 @@ def setup_proxy():
 
 
 if __name__ == '__main__':
+    local_port = 8080
     thr = threading.Thread(
-        target=setup_proxy, args=()
+        target=setup_proxy, args=([local_port])
     )
     thr.setDaemon(True)
     thr.start()
-    set_connection()
+    set_connection(local_port)
