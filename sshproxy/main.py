@@ -65,6 +65,7 @@ def build_jump(bastion, des_server, des_port):
         src_addr = ('localhost', 22)
         jumpbox_channel = bastion_transport.open_channel(
             "direct-tcpip", dest_addr, src_addr)
+        return jumpbox_channel
     except Exception as e:
         print("*** Failed to connect to bastion %s:%d: %r" %
               (bastion[0], bastion[1], e))
